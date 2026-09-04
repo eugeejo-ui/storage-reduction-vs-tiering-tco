@@ -1,19 +1,375 @@
 # =============================================================================
 # 매체 가격 원장 (온프레미스 경로)
+# 프로젝트: 플래시 대비 계층화 저장 설계 총비용 비교 분석
 #
 # 단위계 경고
-#   본 파일의 항목은 매체 구매 원가이며 단위는 USD/TB 입니다.
+#   본 파일의 항목은 매체 구매 원가이며 단위는 USD/TB 또는 KRW/TB 입니다.
 #   클라우드 서비스 이용료(cloud_pricing.yaml)와 단위 및 비용 성격이 다릅니다.
 #   두 원장의 값을 합산하거나 평균하지 마십시오. (phase00_scope.md 4.2절)
 #
 # status     : confirmed / partial / unverified / assumed / pending
 # confidence : official / vendor / thirdparty / derived / assumption / unverified
 # =============================================================================
+
 meta:
   schema_version: "1.0"
   ledger_type: "media_capex"
   unit_system: "USD/TB"
-  updated: ""
+  updated: "2026-09-04"
   base_currency: "KRW"
+  fx_rate: 1350.4
+  fx_basis: "서울 외환시장 2026-09-04 오후 3시 30분 주간거래 종가"
+  fx_source_url: "https://www.mt.co.kr/economy/2026/09/04/2026090415342187051"
+  fx_retrieved: "2026-09-04"
+  fx_note: "기준일을 고정하며 이후 단계에서 변경하지 않는다. 매매기준율이 아닌 시장 종가."
 
-media: {}
+# =============================================================================
+# 1. 배수 R — 본 프로젝트의 주축
+# =============================================================================
+ratio:
+
+  scan_range:
+    low: 3.0
+    base: null          # 대표값을 두지 않는다. 전 구간 스캔이 설계 의도이다.
+    high: 30.0
+    unit: "multiple"
+    status: confirmed
+    confidence: derived
+    source_url: "docs/phase02_media_pricing.md#33"
+    retrieved: "2026-09-04"
+    note: >
+      관측된 배수의 합집합. 대표값을 두지 않는 것이 설계 의도이므로
+      base 를 null 로 유지한다. base 를 채우는 변경은 방법론 위반이다.
+
+  # ---------------------------------------------------------------------------
+  # 관측된 계열 — 서로 다른 방법론이므로 평균하지 않는다
+  # ---------------------------------------------------------------------------
+  observed_series:
+
+    vdura_broad:
+      low: 6.2
+      high: 16.4
+      period: "2025Q2 ~ 2026Q1"
+      status: partial
+      confidence: thirdparty
+      source_url: "https://www.blocksandfiles.com/disk/2026/01/20/vdura-says-enterprise-ssds-now-16-times-more-expensive-than-disk-drives/4090513"
+      retrieved: "2026-09-04"
+      bias_note: "발표처가 하이브리드 스토리지 벤더. 자체 발행 지수."
+
+    vdura_tlc_30tb:
+      low: 7.0
+      high: 23.2
+      period: "2025Q3 ~ 2026Q1(정점)"
+      latest: 18.6
+      latest_period: "2026Q3"
+      status: partial
+      confidence: thirdparty
+      source_url: "https://www.blocksandfiles.com/flash/2026/08/11/ssd-prices-still-rocketing-up-faster-than-disk/5286189"
+      retrieved: "2026-09-04"
+      bias_note: "동일 발표처. 위 계열과 비교 대상이 다르므로 혼용 금지."
+
+    vdura_qlc_30tb:
+      low: 4.9
+      high: 22.6
+      period: "2025Q2 ~ 2026Q1"
+      status: partial
+      confidence: thirdparty
+      source_url: "https://www.blocksandfiles.com/flash/2026/04/08/vdura-says-30-tb-qlc-ssd-capacity-now-costs-226x-more-than-hdd/5214761"
+      retrieved: "2026-09-04"
+      bias_note: "동일 발표처. 세 번째 계열."
+
+    retail_used_ssd:
+      low: 3.1
+      high: 6.7
+      basis: "중고 엔터프라이즈 SAS/SATA 3.84TB 대 니어라인 SATA 소매"
+      status: partial
+      confidence: thirdparty
+      source_url: "https://pcserverandparts.com/news/enterprise-ssd-prices-2026-server-storage-buying-guide/"
+      retrieved: "2026-09-04"
+
+    vendor_baseline:
+      low: 4.0
+      high: 6.0
+      basis: "타 오브젝트 스토리지 벤더 기준선"
+      status: unverified
+      confidence: vendor
+      source_url: "https://www.servnetuk.com/insights/storage-tiering-flash-vs-disk-crossover-2026"
+      retrieved: "2026-09-04"
+
+  # ---------------------------------------------------------------------------
+  # 관측되었으나 스캔 범위에서 제외 — 비교 양변의 대상 불일치
+  # ---------------------------------------------------------------------------
+  excluded_observations:
+
+    new_nvme_vs_nearline:
+      value: 47.0
+      excluded: true
+      reason: >
+        최신 고성능 NVMe 와 저가 니어라인 디스크의 비교. 성능 등급이 다른 매체이므로
+        동일 데이터의 배치 대안으로 볼 수 없다. 배수의 원인이 계층 차이가 아니라
+        성능 차이에서 나온다.
+      source_url: "https://pcserverandparts.com/news/enterprise-ssd-prices-2026-server-storage-buying-guide/"
+      retrieved: "2026-09-04"
+
+    hyperscale_reconstructed:
+      value: 39.0
+      excluded: true
+      reason: >
+        분자는 채널 유통가, 분모는 하이퍼스케일 대량 계약가. 조달 채널이 다른 값을
+        나눈 결과이므로 동일 구매자가 마주하는 선택지의 비교가 아니다.
+      source_url: "docs/phase02_media_pricing.md#32"
+      retrieved: "2026-09-04"
+
+# =============================================================================
+# 2. 해외 매체 절대 단가
+# =============================================================================
+media:
+
+  flash_tlc_30tb:
+    low: 115.3            # 2025Q3 $3,460 / 30TB
+    base: 583.3           # 2026Q1 $17,500 / 30TB
+    high: 753.3           # 2026Q3 $22,600 / 30TB
+    unit: "USD/TB"
+    status: partial
+    confidence: thirdparty
+    source_url: "https://www.blocksandfiles.com/flash/2026/08/11/ssd-prices-still-rocketing-up-faster-than-disk/5286189"
+    retrieved: "2026-09-04"
+    note: "발표처가 2026Q1 값을 $10,950 에서 $17,500 로 사후 개정한 이력이 있다."
+
+  flash_qlc_30tb:
+    low: 92.3             # 2025Q3 $2,768 / 30TB
+    base: 504.0           # 2026Q1 $15,121 / 30TB
+    high: 602.7           # 2026Q3 $18,080 / 30TB
+    unit: "USD/TB"
+    status: partial
+    confidence: thirdparty
+    source_url: "https://www.blocksandfiles.com/flash/2026/04/08/vdura-says-30-tb-qlc-ssd-capacity-now-costs-226x-more-than-hdd/5214761"
+    retrieved: "2026-09-04"
+
+  # ---------------------------------------------------------------------------
+  # HDD — 지수 발표값 미채택. 제조사 재무제표 도출값 채택
+  # ---------------------------------------------------------------------------
+  hdd_vendor_index:
+    low: 16.5             # 2025Q3 $495 / 30TB
+    high: 40.5            # 2026Q3 $1,216 / 30TB
+    unit: "USD/TB"
+    status: unverified
+    confidence: thirdparty
+    adopted: false
+    source_url: "https://www.blocksandfiles.com/flash/2026/08/11/ssd-prices-still-rocketing-up-faster-than-disk/5286189"
+    retrieved: "2026-09-04"
+    rejection_reason: >
+      제조사 SEC 제출 서류에서 도출한 실현 단가와 모순. 지수는 1년 146% 상승을
+      제시하나 제조사 실현 단가는 분기 2.6% 상승이며 경영진도 보합~소폭 상승을
+      공언했다. 절대 단가도 약 3배 차이난다. 미채택.
+
+  hdd_manufacturer_realized:
+    low: 13.5             # 데이터센터 부문 $2,236M / 165.0 EB
+    base: 14.51           # 2025-10-03 종료 분기 $2,634M / 181.5 EB
+    high: 14.89           # 2026-01-02 종료 분기 $2,830M / 190.0 EB
+    unit: "USD/TB"
+    status: confirmed
+    confidence: official
+    adopted: true
+    source_url: "https://www.sec.gov/Archives/edgar/data/1137789/000113778926000026/stx-20260102.htm"
+    retrieved: "2026-09-04"
+    derivation: "분기 매출 ÷ 출하 엑사바이트. 1 EB = 1,000,000 TB."
+    caveat: >
+      대량 계약가이다. 매출의 81% 가 주문자상표부착 방식이며 판매 장려금이
+      총매출의 약 11% 이다. 니어라인 평균 용량은 드라이브당 약 23TB 로,
+      30TB 급에는 프리미엄이 붙는다. 소규모 구매자의 조달 단가가 아니다.
+
+  hdd_retail_nearline:
+    base: 25.0
+    unit: "USD/TB"
+    status: partial
+    confidence: thirdparty
+    source_url: "https://pcserverandparts.com/news/enterprise-ssd-prices-2026-server-storage-buying-guide/"
+    retrieved: "2026-09-04"
+    note: "12TB / 16TB / 20TB 전 용량대에서 평탄"
+
+# =============================================================================
+# 3. 국내 조달 실거래가 — 검증용
+#
+#   경고: 아래 flash_* 항목과 object_* 항목을 서로 나누지 말 것.
+#   flash 는 매체만의 가격이고 object 는 시스템 전체의 가격이다.
+#   나누면 배수가 실제보다 작게 산출되며 그 정도를 판정할 수 없다.
+#   (phase02_media_pricing.md 4.4절)
+# =============================================================================
+kr_procurement:
+
+  flash_array_fru:
+    low: 2856538          # 천안시
+    base: 3029923         # 동두천시
+    high: 3993180         # 구미시
+    unit: "KRW/TB"
+    usd_low: 2115
+    usd_base: 2244
+    usd_high: 2957
+    status: confirmed
+    confidence: official
+    source_url: "https://www.g2b.go.kr"
+    retrieved: "2026-09-04"
+    basis: "공급가액 기준(부가세 제외). 설치·구성·1년 무상 하자보수 포함."
+    records:
+      - agency: "충청남도 천안시"
+        notice: "R26BK01587389-000"
+        spec: "AF250S3 Value SSD SAS 3.84TB x 4"
+        raw_tb: 15.36
+        award_krw_incl_vat: 48264070
+      - agency: "경기도 동두천시"
+        notice: "R26BK01522450-000"
+        spec: "VSP FX00 3.8TB SFF SSD x 4"
+        raw_tb: 15.20
+        award_krw_incl_vat: 50660314
+      - agency: "경상북도 구미시"
+        notice: "R26BK01589308-000"
+        spec: "VSP F350 1.92TB SFF SSD x 4EA"
+        raw_tb: 7.68
+        usable_tb: 5.0
+        award_krw_incl_vat: 33734380
+    caveat: >
+      소량 구매(4개), 구형 플랫폼용 부품, 1년 보증 포함. 소규모 증설 시의
+      상한선으로만 사용하며 대량 신규 도입 단가로 확대 적용하지 않는다.
+
+  flash_manufacturer_agreement:
+    base: 4000000         # Hitachi 1.92TB 기준, 공급가액
+    unit: "KRW/TB"
+    status: confirmed
+    confidence: official
+    source_url: "https://www.g2b.go.kr"
+    retrieved: "2026-09-04"
+    note: >
+      과업지시서에 공개된 제조사 협약금액. 낙찰가와 99.72~99.83% 일치하여
+      유통 마진이 0.2~0.3% 에 불과하다. 협상 결과가 아니라 정가에 가깝다.
+      Hitachi 는 정확히 4,000,000 원/TB, 후지쯔는 드라이브당 정확히
+      11,000,000 원으로 딱 떨어지는 단가표를 시사한다.
+
+  object_system_raw:
+    base: 470328
+    unit: "KRW/TB"
+    usd_base: 348
+    status: confirmed
+    confidence: official
+    source_url: "https://www.g2b.go.kr"
+    retrieved: "2026-09-04"
+    basis: "원시 용량 576TB 기준. 공급가액."
+    record:
+      agency: "중소벤처기업진흥공단"
+      notice: "R26BK01624183-000"
+      config: "3노드 이상, 노드당 16TB x 12개 이상"
+      raw_tb: 576
+      usable_tb: 100
+      award_krw_incl_vat: 298000000
+      includes: "서버 3대, 10G/25G 48포트 스위치 2대, 소프트웨어, 설치, 3사이트 구성, 1년 하자보수"
+      features: "Erasure Coding, S3 Glacier 호환, 테이프 연동"
+    competition_note: >
+      참여 2곳, 투찰률 98.2%. 동일 기간 매체 단독 구매 3건은 참여 8~19곳,
+      투찰률 88~89%. 국내 조달 시장에서 오브젝트 스토리지는 저경쟁 품목이다.
+
+  object_system_usable:
+    base: 2709091
+    unit: "KRW/TB"
+    usd_base: 2006
+    status: confirmed
+    confidence: official
+    source_url: "https://www.g2b.go.kr"
+    retrieved: "2026-09-04"
+    basis: "가용 용량 100TB 기준. 공급가액."
+
+# =============================================================================
+# 4. 파생 관측 — 어레이 정품 프리미엄
+# =============================================================================
+derived:
+
+  array_oem_premium:
+    low: 2.8
+    base: 3.3
+    high: 3.9
+    unit: "multiple"
+    status: confirmed
+    confidence: derived
+    source_url: "docs/phase02_media_pricing.md#5"
+    retrieved: "2026-09-04"
+    derivation: "국내 조달 어레이 정품 드라이브 USD/TB ÷ 시장 지수 30TB TLC USD/TB"
+    implication: >
+      고객이 실제로 지불하는 플래시 가격은 NAND 시세가 아니라 어레이 벤더의
+      드라이브 단가이다. 시장 지수를 그대로 총비용 모델에 투입하면 실제 견적보다
+      약 3배 낮게 산정된다.
+
+# =============================================================================
+# 5. 용량 오버헤드 — 단일 계수가 아니다
+# =============================================================================
+overhead:
+
+  raid_block_tier:
+    base: 1.536
+    unit: "multiple"
+    status: confirmed
+    confidence: official
+    source_url: "https://www.g2b.go.kr"
+    retrieved: "2026-09-04"
+    derivation: "구미시 규격서. 원시 7.68TB, 가용 5TB 이상."
+    applies_to: "단일 어레이 블록 계층"
+
+  erasure_coding_single_site:
+    base: 1.333
+    unit: "multiple"
+    status: confirmed
+    confidence: vendor
+    source_url: "https://www.delltechnologies.com/asset/en-us/products/storage/technical-support/objectscale-spec-sheet.pdf"
+    retrieved: "2026-09-04"
+    derivation: "12+4 구성. (12+4)/12 = 1.333"
+    applies_to: "오브젝트 계층 단일 사이트, 5노드 최소 클러스터"
+
+  multisite_distributed:
+    base: 5.76
+    unit: "multiple"
+    status: confirmed
+    confidence: official
+    source_url: "https://www.g2b.go.kr"
+    retrieved: "2026-09-04"
+    derivation: "중진공 규격서. 원시 576TB, 가용 100TB."
+    applies_to: "3개 데이터센터 분산 + 이레저 코딩"
+    note: >
+      이레저 코딩 단독이 아니라 다중 사이트 분산 요구가 얹힌 값이다.
+      Phase 3 에서 구성 조건에 따라 세 계수 중 하나를 선택하도록 구현한다.
+
+# =============================================================================
+# 6. 상각기간
+# =============================================================================
+amortization:
+
+  media_amortization_years:
+    low: 4
+    base: 5
+    high: 6
+    unit: "years"
+    status: confirmed
+    confidence: official
+    source_url: "https://law.go.kr/LSW//flDownload.do?gubun=&flSeq=138949533&bylClsCd=110201"
+    retrieved: "2026-09-04"
+    legal_basis: "법인세법 시행규칙 별표 5 (개정 2024. 3. 22.) 구분 1 — 공구, 기구, 금형 및 비품"
+    note: >
+      임의 가정이 아니라 법령이 정한 범위이므로 confirmed 로 등재한다.
+      다만 4~6년으로 열려 있으므로 민감도 분석에는 그대로 포함시킨다.
+
+# =============================================================================
+# 7. 미확보 항목
+# =============================================================================
+pending:
+
+  object_appliance_media_only:
+    status: pending
+    reason: >
+      온프레미스 오브젝트 어플라이언스의 매체 단독 단가를 확보하지 못했다.
+      파트너 포털 로그인이 필요하며 공개 가격표가 없다. 리셀러 가격 1건
+      (품번 210-BQRC, 부가세 제외 GBP 109,095.06)을 확보했으나 품번에 용량
+      정보가 없고 동일 품명 노드가 48TB 에서 576TB 까지 6가지 구성으로
+      갈리므로 12배 편차가 발생한다. 추정하지 않았다.
+    workaround: "국내 조달 오브젝트 시스템 원시 용량 기준값으로 대리하고 그 사실을 명시"
+
+  bulk_purchase_premium_reduction:
+    status: pending
+    reason: "대량 도입 시 어레이 정품 프리미엄의 축소 폭. 소량 4개 구매 사례만 확보"
+    workaround: "상한선으로 처리하고 민감도에 포함"

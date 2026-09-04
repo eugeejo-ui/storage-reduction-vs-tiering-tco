@@ -1,18 +1,90 @@
 # =============================================================================
 # 클라우드 가격 원장 (대조 경로)
+# 프로젝트: 플래시 대비 계층화 저장 설계 총비용 비교 분석
 #
 # 단위계 경고
 #   본 파일의 항목은 클라우드 서비스 이용료이며 단위는 USD/GB/month 입니다.
 #   매체 구매 원가(media_pricing.yaml)와 단위 및 비용 성격이 다릅니다.
 #   두 원장의 값을 합산하거나 평균하지 마십시오. (phase00_scope.md 4.2절)
 #
-#   선행 프로젝트에서 승계한 항목은 출처와 조회일을 그대로 옮겨 적습니다.
+#   특히 아래 ssd_price / hdd_price / object_price 는 이름이 매체명과 유사하나
+#   매체 구매 원가가 아니라 클라우드 서비스 요금입니다. 주 경로의 매체 단가로
+#   전용하지 마십시오. 선행 프로젝트가 제시한 계층 간 64배 격차 역시
+#   클라우드 요금제 간의 격차이며 본 프로젝트의 배수 R 과 다른 대상입니다.
+#
+# status     : confirmed / partial / unverified / assumed / pending
+# confidence : official / vendor / thirdparty / derived / assumption / unverified
 # =============================================================================
+
 meta:
   schema_version: "1.0"
   ledger_type: "cloud_opex"
   unit_system: "USD/GB/month"
-  updated: ""
+  updated: "2026-09-04"
   base_currency: "KRW"
+  fx_rate: 1350.4
+  fx_basis: "서울 외환시장 2026-09-04 오후 3시 30분 주간거래 종가"
+  fx_source_url: "https://www.mt.co.kr/economy/2026/09/04/2026090415342187051"
+  fx_retrieved: "2026-09-04"
+  region: "ap-northeast-2 (서울)"
+  inheritance_note: >
+    선행 프로젝트(SIEM 자체 구축 대비 구매 총비용 비교 분석)에서 승계한 항목이다.
+    출처 URL 과 조회일을 그대로 옮겨 적었으며 재조회하지 않았다.
 
-cloud: {}
+cloud:
+
+  ssd_price:
+    base: 0.0912
+    unit: "USD/GB/month"
+    service: "AWS EBS gp3"
+    status: confirmed
+    confidence: official
+    source_url: "https://aws-pricing.com/ap-northeast-2.html"
+    retrieved: "2026-09-03"
+    warning: "클라우드 블록 스토리지 서비스 요금. 플래시 매체 구매가가 아니다."
+
+  hdd_price:
+    base: 0.0174
+    unit: "USD/GB/month"
+    service: "AWS EBS sc1"
+    status: confirmed
+    confidence: official
+    source_url: "https://aws-pricing.com/ap-northeast-2.html"
+    retrieved: "2026-09-03"
+    warning: "클라우드 블록 스토리지 서비스 요금. 디스크 매체 구매가가 아니다."
+
+  object_price:
+    base: 0.025
+    unit: "USD/GB/month"
+    service: "AWS S3 Standard"
+    status: confirmed
+    confidence: official
+    source_url: "https://aws.amazon.com/s3/pricing/"
+    retrieved: "2026-09-03"
+    warning: "클라우드 오브젝트 스토리지 서비스 요금. 어플라이언스 구매가가 아니다."
+
+# =============================================================================
+# 대조 경로의 배수 — 주 경로의 배수 R 과 별도로 산출한다
+# =============================================================================
+cloud_ratio:
+
+  block_ssd_to_object:
+    base: 3.648          # 0.0912 / 0.025
+    unit: "multiple"
+    status: confirmed
+    confidence: derived
+    source_url: "docs/phase02_media_pricing.md#8"
+    retrieved: "2026-09-04"
+    note: >
+      클라우드 요금제 간 배수이다. 주 경로의 매체 단가 배수 R 과 합산하거나
+      평균하지 않으며, 두 값이 다르게 나타난다면 그 차이 자체를 결과로 보고한다.
+      클라우드 정가는 NAND 계약가 변동을 즉시 반영하지 않는 반면 매체 구매가는
+      즉시 반영하므로, 동일 시점에도 두 경로의 배수가 다르게 나타날 수 있다.
+
+  block_ssd_to_block_hdd:
+    base: 5.241          # 0.0912 / 0.0174
+    unit: "multiple"
+    status: confirmed
+    confidence: derived
+    source_url: "docs/phase02_media_pricing.md#8"
+    retrieved: "2026-09-04"
