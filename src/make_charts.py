@@ -326,7 +326,10 @@ def chart_uncertainty(base, out_dir, korean=True, iterations=600):
         probs.append(mc.prob_below(base.ratio_r) * 100)
 
     fig, ax = plt.subplots(figsize=(9.5, 5.2))
-    bp = ax.boxplot(samples, orientation="vertical", widths=0.55,
+    # 방향 인자를 명시하지 않는다. 세로가 기본값이며, 구버전과 신버전이
+    # 서로 다른 인자 이름을 쓰기 때문에 어느 쪽을 적어도 다른 환경에서
+    # TypeError 가 난다. 생략하면 양쪽에서 동작한다.
+    bp = ax.boxplot(samples, widths=0.55,
                     patch_artist=True, showfliers=False, zorder=3)
     for box in bp["boxes"]:
         box.set(facecolor=C_ARCHIVE, edgecolor=C_FLASH, linewidth=1.2)

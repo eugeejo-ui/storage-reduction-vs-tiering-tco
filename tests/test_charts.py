@@ -186,6 +186,28 @@ def test_통합_불확실성_차트의_확률이_민감도_결과와_일치(base
         assert charted == pytest.approx(v.prob_acceptable * 100, abs=0.01)
 
 
+def test_호환성_boxplot에_방향_인자를_쓰지_않는다():
+    """구버전은 vert=, 신버전은 orientation= 을 쓴다.
+    어느 쪽을 적어도 다른 환경에서 TypeError 가 난다.
+
+    실제로 Anaconda 환경에서 신버전 전용 인자가 TypeError 를 냈다.
+    경고를 없애려다 호환성을 깬 사례이므로 코드로 고정한다.
+
+    주석까지 잡히면 오탐이 되므로 boxplot 호출부만 검사한다.
+    """
+    src = Path(mc.__file__).read_text(encoding="utf-8")
+    calls = [l for l in src.splitlines()
+             if "boxplot(" in l or (l.strip().startswith("patch_artist"))]
+    joined = " ".join(calls)
+    assert "orientation" not in joined, (
+        "boxplot 에 방향 인자를 쓰면 구버전 matplotlib 에서 실패합니다."
+    )
+    assert "vert" not in joined, (
+        "boxplot 에 방향 인자를 쓰면 신버전에서 경고가 발생합니다. "
+        "세로가 기본값이므로 생략하십시오."
+    )
+
+
 def test_통합_지도의_증가배수가_1이상이어야_한다(base, tmp_path):
     """3사이트 구성이 단일 사이트보다 저렴해지면 계산 오류다."""
     _, maps = mc.chart_cost_map(base, tmp_path, korean=False)
